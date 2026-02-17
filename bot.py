@@ -3,43 +3,96 @@ import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
+# ==========================
+# CONFIGURACIÓN
+# ==========================
+
 TOKEN = os.getenv("BOT_TOKEN")
 
 logging.basicConfig(level=logging.INFO)
 
-BANNED_WORDS = [
-    "coca", "cocaina", "falopa", "porro", "marihuana", "vendo",
-    "venta", "droga", "mdma", "tussi", "ketamina", "lsd"
+# Palabras relacionadas a drogas
+PALABRAS_DROGAS = [
+    "coca",
+    "cocaina",
+    "cristal",
+    "metanfetamina",
+    "tussi",
+    "mdma",
+    "lsd",
+    "ketamina",
+    "heroina",
+    "vendo droga",
+    "venta droga"
 ]
 
-async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message and update.message.text:
-        text = update.message.text.lower()
+# Palabras relacionadas a contenido ilegal grave
+PALABRAS_CRITICAS = [
+    "cp",
+    "child porn",
+    "preteen",
+    "minor sex",
+    "13yo",
+    "12yo",
+    "pthc",
+    "lolita"
+]
 
-        for word in BANNED_WORDS:
-            if word in text:
-                user = update.message.from_user
+# Emojis asociados a drogas
+EMOJIS_PROHIBIDOS = [
+    "💊",
+    "❄️",
+    "🧪",
+    "💉"
+]
 
-                await context.bot.ban_chat_member(
-                    chat_id=update.effective_chat.id,
-                    user_id=user.id
-                )
+# Unificamos todo
+LISTA_PROHIBIDA = PALABRAS_DROGAS + PALABRAS_CRITICAS + EMOJIS_PROHIBIDOS
 
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text=f"🚫 Usuario @{user.username} eliminado por contenido prohibido."
-                )
-                break
+
+# ==========================
+# FUNCIÓN DE MODERACIÓN
+# ==========================
+
+async def moderar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
+    texto = update.message.text.lower()
+
+    for elemento in LISTA_PROHIBIDA:
+        if elemento in texto:
+            user_id = update.effective_user.id
+            chat_id = update.effective_chat.id
+
+            try:
+                await update.message.delete()
+            except:
+                pass
+
+            try:
+                await context.bot.ban_chat_member(chat_id, user_id)
+            except:
+                pass
+
+            logging.info(f"Usuario {user_id} eliminado por contenido prohibido.")
+            break
+
+
+# ==========================
+# MAIN
+# ==========================
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, moderate)
+        MessageHandler(filters.TEXT & ~filters.COMMAND, moderar)
     )
 
-    print("Bot iniciado...")
+    print("Severium activo 24/7")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
