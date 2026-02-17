@@ -38,15 +38,15 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 break
 
-def main():
+import asyncio
+
+async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, moderate))
 
-    app.run_polling()
+    print("Bot iniciado...")
+    await app.run_polling()
 
 if __name__ == "__main__":
-    main()
-
-
-Initial bot version
+    asyncio.run(main())
